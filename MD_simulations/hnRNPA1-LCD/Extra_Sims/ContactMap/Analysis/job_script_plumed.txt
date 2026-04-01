@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#SBATCH -n 1
+#SBATCH --time=23:58:00
+#SBATCH --job-name="CMhn_10"
+#SBATCH --mem-per-cpu=8192
+
+module load stack/2024-06
+module load gcc/12.2.0
+module load openmpi/4.1.6
+module load plumed/2.8.0-neeavgu
+plumed driver --plumed INPUT_PLUMED_pep_10A.dat --mf_xtc result.xtc
+

@@ -1,0 +1,78 @@
+variable temperature equal 300
+variable randomSeed equal 21507
+
+# Initialise parameters for units and box type
+units       real
+dimension   3
+boundary    p p f
+atom_style  full
+bond_style  harmonic
+dielectric  80.0
+
+# Create new simulation box or load existing box
+read_data       Fr_732k.dat
+include         set_pair_param-Mpipi.dat
+velocity        all create ${temperature} ${randomSeed}
+special_bonds 	fene
+
+# Computational parameters
+neighbor  3.5 multi
+neigh_modify    every 10 delay 0
+fix 			fxnve all nve
+fix             fxlange all langevin ${temperature} ${temperature} 100000.0 ${randomSeed}
+
+# Fix group
+group 			slab id 1:2240
+group			peptide id 2241:2270
+group			peptide2 id 2271:2300
+fix 			fixCOM slab recenter 32.6 32.6 65.0 shift all
+
+fix				INIzsoftwallhi slab wall/harmonic zhi 175 0.01 0.0 37.5
+fix				INIzsoftwalllo slab wall/harmonic zlo -45 0.01 0.0 37.5
+
+# Thermo output settings
+thermo          10000
+thermo_style    custom step pe ecoul ke temp press density
+thermo_modify   flush yes
+dump            1 all custom 1000000 pulltraj.lammpstrj id mol type q x y z ix iy iz
+dump_modify     1 sort id
+
+# Relax sim by performing minimisation (this is helpful if we change the potential or sequence)
+min_style       fire
+timestep        0.0000001
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.00001
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.0001
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.01
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.1
+minimize 0.0 1.0e-8 1000 100000
+timestep        1
+minimize 0.0 1.0e-8 1000 100000
+timestep        10
+minimize 0.0 1.0e-8 1000 100000
+
+# Equilibration
+velocity all scale ${temperature} 
+timestep        0.5
+fix				INITconstraint peptide spring couple slab 50 NULL NULL -75.1 0.0
+fix				INITconstraint2 peptide2 spring couple slab 50 NULL NULL 43.2 0.0
+run 			50000
+
+unfix			INIzsoftwallhi
+unfix			INIzsoftwalllo
+fix				INIzsoftwallhi slab wall/harmonic zhi 175 5.0 0.0 37.5
+fix				INIzsoftwalllo slab wall/harmonic zlo -45 5.0 0.0 37.5
+
+timestep        10
+velocity all scale ${temperature} 
+run 			300000 every 50000 "reset_atoms image all"
+unfix			INITconstraint
+unfix			INITconstraint2
+velocity all scale ${temperature} 
+
+# Run simulation
+fix 			Colvars all colvars colvar_abf_slab.inp output colvar_out
+run             25000000 every 200000 "reset_atoms image all"

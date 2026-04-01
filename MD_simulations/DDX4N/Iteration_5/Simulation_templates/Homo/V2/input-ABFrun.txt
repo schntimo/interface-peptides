@@ -1,0 +1,65 @@
+variable temperature equal 300
+variable randomSeed equal 21178
+
+# Initialise parameters for units and box type
+units       real
+dimension   3
+boundary    p p p
+atom_style  full
+bond_style  harmonic
+dielectric  80.0
+
+# Create new simulation box or load existing box
+read_data       N_30_A_P_mix.dat
+include         set_pair_param-Mpipi.dat
+velocity        all create ${temperature} ${randomSeed}
+special_bonds 	fene
+
+# Computational parameters
+neighbor  3.5 multi
+neigh_modify    every 10 delay 0
+fix 			fxnve all nve
+fix             fxlange all langevin ${temperature} ${temperature} 100000.0 ${randomSeed}
+fix 			fixCOM all recenter INIT INIT INIT  # this helps to prevent drift of the interfaces and makes it easier to average over many measurements
+
+# Fix group
+group 			mol1 id 1:30
+group			mol2 id 31:60
+
+# Thermo output settings
+thermo          40000
+thermo_style    custom step pe ecoul ke temp press density
+thermo_modify   flush yes
+dump            1 all custom 40000 result.lammpstrj id mol type q x y z
+dump_modify     1 sort id
+
+# Energy miminization
+min_style       fire
+timestep        0.0000001
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.00001
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.0001
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.001
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.01
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.1
+minimize 0.0 1.0e-8 1000 100000
+
+# Equilibration 1 & 2
+fix				INITconstraint mol1 spring couple mol2 200 0 0 0 70
+timestep        0.1
+run 			20000
+velocity all scale ${temperature} 
+timestep        10
+run 			100000
+velocity all scale ${temperature} 
+
+# Run simulation
+unfix			INITconstraint
+fix 			Colvars all colvars colvar_def_N30.inp output test_colvar_out
+run             100000000
+
+

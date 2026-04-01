@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#SBATCH -n 1
+#SBATCH --time=3:12:00
+#SBATCH --job-name="testing"
+#SBATCH --mem-per-cpu=512
+
+
+/cluster/home/schntimo/LAMMPS_installation/lammps-2Aug2023/build/lmp -in input-ABFrun.txt
+

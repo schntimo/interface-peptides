@@ -1,0 +1,31 @@
+colvarsTrajFrequency 0
+
+colvar {
+	name dist
+	lowerBoundary 0
+	upperBoundary 70
+	width 0.5		
+	distance {
+		group1 { atomNumbersRange 1-30 }
+		group2 { atomNumbersRange 31-60 }
+	}
+}
+
+harmonicWalls {
+	name mywalls
+	colvars dist
+	lowerWalls 0
+	upperWalls 70
+	forceConstant 10.0
+}
+	
+abf {
+	name abf_v1
+	colvars dist
+	fullSamples 500
+	applyBias yes
+	outputFreq 100000
+	historyFreq 0
+}	
+	
+	

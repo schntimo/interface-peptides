@@ -1,0 +1,59 @@
+colvarsTrajFrequency 0
+
+colvar {
+	name dist
+	lowerBoundary 96
+	upperBoundary 128
+	width 2
+	distanceZ {
+		main { atomNumbersRange 2689-2718 }
+		ref { atomNumbersRange 1-2688 }
+	}
+}
+
+harmonicWalls {
+	name mywalls
+	colvars dist
+	lowerWalls 96
+	upperWalls 128
+	forceConstant 20.0
+}
+
+abf {
+	name abf_v1
+	colvars dist
+	fullSamples 5000
+	applyBias yes
+	outputFreq 100000
+	historyFreq 100000
+}	
+
+
+
+colvar {
+	name dist2
+	lowerBoundary 0
+	upperBoundary 32
+	width 2
+	distanceZ {
+		main { atomNumbersRange 1-2688 }
+		ref { atomNumbersRange 2719-2748 }
+	}
+}
+
+harmonicWalls {
+	name mywalls2
+	colvars dist2
+	lowerWalls 0
+	upperWalls 32
+	forceConstant 20.0
+}
+
+abf {
+	name abf_v2
+	colvars dist2
+	fullSamples 5000
+	applyBias yes
+	outputFreq 100000
+	historyFreq 100000
+}		

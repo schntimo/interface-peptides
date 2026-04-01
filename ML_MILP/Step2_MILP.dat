@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#SBATCH -n 1
+#SBATCH --cpus-per-task=32
+#SBATCH --time=23:58:00
+#SBATCH --job-name="MILP"
+#SBATCH --mem-per-cpu=4096
+
+module load stack/2024-06 gcc/12.2.0 python/3.11.6 gurobi
+source python_env/bin/activate
+
+python ./run_MILP.py --explore --n_steps=150 --n_threads=32 --parallel=1 --output_name=example_results
+python ./run_MILP.py --no-explore  --n_steps=75 --n_threads=32 --parallel=1 --output_name=example_results
+

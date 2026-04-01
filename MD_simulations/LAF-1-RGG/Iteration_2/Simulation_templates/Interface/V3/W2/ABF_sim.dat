@@ -1,0 +1,75 @@
+variable temperature equal 300
+variable randomSeed equal 12444
+
+# Initialise parameters for units and box type
+units       real
+dimension   3
+boundary    p p f
+atom_style  full
+bond_style  harmonic
+dielectric  80.0
+
+# Create new simulation box or load existing box
+read_data       F208k.dat
+include         set_pair_param-Mpipi.dat
+velocity        all create ${temperature} ${randomSeed}
+special_bonds 	fene
+
+# Computational parameters
+neighbor  3.5 multi
+neigh_modify    every 10 delay 0
+fix 			fxnve all nve
+fix             fxlange all langevin ${temperature} ${temperature} 100000.0 ${randomSeed}
+
+# Fix group
+group 			slab id 1:2688
+group			peptide id 2689:2718
+group			peptide2 id 2719:2748
+fix 			fixCOM slab recenter 35 35 75 shift all
+
+fix				INIzsoftwallhi slab wall/harmonic zhi 195 0.1 0.0 40
+fix				INIzsoftwalllo slab wall/harmonic zlo -45 0.1 0.0 40
+
+# Thermo output settings
+thermo          10000
+thermo_style    custom step pe ecoul ke temp press density
+thermo_modify   flush yes
+dump            1 all custom 1000000 pulltraj.lammpstrj id mol type q x y z ix iy iz
+dump_modify     1 sort id
+
+# Energy miminization
+min_style       fire
+timestep        0.0000001
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.00001
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.0001
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.001
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.01
+minimize 0.0 1.0e-8 1000 100000
+timestep        0.1
+minimize 0.0 1.0e-8 1000 100000
+
+# Equilibration 
+timestep        0.5
+fix				INITconstraint peptide spring couple slab 50 NULL NULL -87 0.0
+fix				INITconstraint2 peptide2 spring couple slab 50 NULL NULL 58 0.0
+run 			10000
+
+unfix			INIzsoftwallhi
+unfix			INIzsoftwalllo
+fix				INIzsoftwallhi slab wall/harmonic zhi 195 5.0 0.0 40
+fix				INIzsoftwalllo slab wall/harmonic zlo -45 5.0 0.0 40
+
+timestep        10
+velocity all scale ${temperature} 
+run 			500000 every 50000 "reset_atoms image all"
+unfix			INITconstraint
+unfix			INITconstraint2
+velocity all scale ${temperature} 
+
+# Run simulation
+fix 			Colvars all colvars colvar_abf_slab.inp output colvar_out
+run             25000000 every 50000 "reset_atoms image all"
